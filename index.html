@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Grade de vídeos do YouTube</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background: #0f172a; color: #f8fafc; }
+    header { padding: 28px 18px 20px; text-align: center; background: linear-gradient(135deg, #7c3aed, #db2777); }
+    h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 4vw, 2.2rem); }
+    header p { margin: 0; opacity: .9; }
+    main { max-width: 1400px; margin: 0 auto; padding: 22px 18px 40px; }
+    .controls { display: flex; gap: 10px; max-width: 850px; margin: 0 auto 18px; }
+    input { flex: 1; min-width: 0; padding: 14px 15px; border: 1px solid #475569; border-radius: 12px; background: #1e293b; color: white; font-size: 1rem; outline: none; }
+    input:focus { border-color: #c084fc; box-shadow: 0 0 0 3px #a855f733; }
+    button { border: 0; border-radius: 12px; padding: 0 22px; font-size: 1rem; font-weight: 700; cursor: pointer; color: white; background: #db2777; }
+    button:hover { filter: brightness(1.1); }
+    button:disabled { opacity: .55; cursor: not-allowed; }
+    .note { text-align: center; color: #cbd5e1; font-size: .9rem; margin: 0 0 20px; }
+    #status { text-align: center; min-height: 1.4em; margin-bottom: 16px; color: #e9d5ff; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 14px; }
+    .video-card { overflow: hidden; border: 1px solid #334155; border-radius: 14px; background: #1e293b; box-shadow: 0 8px 24px #0002; }
+    .video-card iframe { display: block; width: 100%; aspect-ratio: 16 / 9; border: 0; background: #020617; }
+    .card-label { padding: 9px 12px; color: #cbd5e1; font-size: .82rem; }
+    @media (max-width: 560px) { .controls { flex-direction: column; } button { min-height: 48px; } .grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 9px; } }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Grade de vídeos do YouTube</h1>
+    <p>Insira um link e crie 50 prévias em uma grade.</p>
+  </header>
+  <main>
+    <div class="controls">
+      <input id="youtubeUrl" type="url" placeholder="Cole aqui o link do YouTube" aria-label="Link do YouTube" />
+      <button id="startButton" type="button">INICIAR</button>
+    </div>
+    <p class="note">Os vídeos serão incorporados sem autoplay. A reprodução só começa se você clicar em um player.</p>
+    <div id="status" role="status" aria-live="polite"></div>
+    <section id="videoGrid" class="grid" aria-label="Grade de vídeos"></section>
+  </main>
+  <script>
+    const input = document.getElementById('youtubeUrl');
+    const button = document.getElementById('startButton');
+    const grid = document.getElementById('videoGrid');
+    const status = document.getElementById('status');
+
+    function getVideoId(raw) {
+      try {
+        const url = new URL(raw.trim());
+        if (url.hostname === 'youtu.be' || url.hostname === 'www.youtu.be') {
+          return url.pathname.split('/').filter(Boolean)[0] || null;
+        }
+        if (url.hostname.endsWith('youtube.com') || url.hostname.endsWith('youtube-nocookie.com')) {
+          if (url.pathname === '/watch') return url.searchParams.get('v');
+          const parts = url.pathname.split('/').filter(Boolean);
+          if (['embed', 'shorts', 'live'].includes(parts[0])) return parts[1] || null;
+        }
+      } catch (_) {}
+      return null;
+    }
+
+    button.addEventListener('click', () => {
+      const id = getVideoId(input.value);
+      if (!id || !/^[\w-]{11}$/.test(id)) {
+        status.textContent = 'Link inválido. Cole um link válido de vídeo do YouTube.';
+        input.focus();
+        return;
+      }
+      grid.replaceChildren();
+      const fragment = document.createDocumentFragment();
+      for (let i = 1; i <= 50; i++) {
+        const card = document.createElement('article');
+        card.className = 'video-card';
+        const frame = document.createElement('iframe');
+        frame.src = `https://www.youtube-nocookie.com/embed/${id}?autoplay=0`;
+        frame.title = `Vídeo do YouTube ${i}`;
+        frame.loading = 'lazy';
+        frame.allow = 'accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share';
+        frame.referrerPolicy = 'strict-origin-when-cross-origin';
+        frame.allowFullscreen = true;
+        const label = document.createElement('div');
+        label.className = 'card-label';
+        label.textContent = `Vídeo ${i} de 50`;
+        card.append(frame, label);
+        fragment.append(card);
+      }
+      grid.append(fragment);
+      status.textContent = '50 players adicionados. Nenhum vídeo foi iniciado automaticamente.';
+    });
+  </script>
+</body>
+</html>
